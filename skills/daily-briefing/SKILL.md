@@ -28,6 +28,8 @@ GITHUB_TOKEN=ghp_…           # or use `gh auth login`
 LINEAR_API_KEY=lin_api_…     # optional
 TELEGRAM_BOT_TOKEN=…         # the bot that DMs you
 TELEGRAM_CHAT_ID=…           # your DM chat id
+
+TODOS_FILE=~/Documents/Obsidian/TODOs.md   # optional, default shown
 ```
 
 ## How it works
@@ -36,7 +38,34 @@ TELEGRAM_CHAT_ID=…           # your DM chat id
 2. Pull GitHub: open PRs assigned to you, PRs awaiting review, PRs merged in last 24h.
 3. (Optional) Pull Linear: in-progress issues, issues stalled >3 days.
 4. Pull `~/.hermes/logs/` and any agent watchdog alert dirs for unread P0 issues.
-5. Compose a single Telegram message. Send.
+5. **Read your TODOs file** (`$TODOS_FILE`, default `~/Documents/Obsidian/TODOs.md`):
+   - Today's items (any checkbox with today's date tag) → shown bold
+   - Next 3 days of Upcoming → shown as a peek-ahead
+   - Any item with a past date that's still unchecked → flagged **OVERDUE**
+6. Compose a single Telegram message. Send.
+
+## TODOs file format
+
+The skill reads a plain markdown checkbox file (designed to live in your Obsidian vault as `TODOs.md`):
+
+```markdown
+## Today (YYYY-MM-DD)
+- [ ] [2026-04-28] Post Show HN — 8am ET window
+- [ ] [2026-04-28] Watch thread first hour
+
+## Upcoming (next 7 days)
+### Wednesday 2026-04-29
+- [ ] [2026-04-29] Reply to Nous AMA thread with substance
+
+## Backlog (no date)
+- [ ] Add 2 more skills to operator-pack
+```
+
+Rules the skill enforces:
+- `[YYYY-MM-DD]` date tags determine bucket (today / upcoming / overdue)
+- Items in `Backlog` are **never** shown in the daily briefing
+- Items in `Done — Archive` are skipped
+- Parsing is regex-based, no LLM call required for the read step
 
 ## Suggested cron
 
@@ -50,6 +79,19 @@ hermes cron create "0 7 * * *" --name daily-briefing \
 
 ```
 ☕ Daily Briefing — Mon Apr 28
+
+📌 Today's TODOs
+  ▸ Post Show HN — 8am ET window
+  ▸ Watch thread first hour
+  ▸ Confirm landing page live
+
+⚠️ OVERDUE (1)
+  ▸ [2026-04-25] Reply to vendor invoice email
+
+🔭 Coming up
+  Tue: Nous AMA prep, services-pivot decision
+  Wed: AMA goes live 8am PT
+  Thu: mid-week post-mortem
 
 💰 Revenue (24h)
   MRR: $1,247 (+$24 net)
@@ -77,3 +119,4 @@ hermes cron create "0 7 * * *" --name daily-briefing \
 - **Telegram chat ID.** DMs need the user-side chat id, not the bot id. Use `https://api.telegram.org/bot<TOKEN>/getUpdates` to find it.
 - **GitHub rate limits.** Use a fine-grained PAT scoped to your repos to avoid bumping into the 60/h unauthenticated limit.
 - **Don't run this from gateway** — long-running aggregations can exceed gateway timeouts. Use a cron job.
+- **TODOs file parsing.** Date tags must be `[YYYY-MM-DD]` exactly — the parser is regex-based. Other date formats are ignored. If "today" looks empty in the briefing but you swear you have items due today, check the date tag format.
