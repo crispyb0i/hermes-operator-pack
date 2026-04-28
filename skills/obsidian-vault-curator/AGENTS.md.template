@@ -1,0 +1,78 @@
+# {Vault Name} — LLM Wiki Schema
+
+This file tells the LLM how to operate on this Obsidian vault. It defines page conventions, workflows, and linking standards. The LLM maintains the wiki; you curate sources and direct the work.
+
+---
+
+## Vault Structure
+
+```
+{Vault Name}/
+├── index.md              # Master catalog — every wiki page, one-line summary
+├── log.md                # Append-only activity log (ingests, queries, lint)
+├── AGENTS.md             # This file — LLM operating instructions
+├── Sources/              # Raw, immutable source material
+├── Business/             # Product wiki pages (one subdirectory per product)
+│   └── {Product}/
+│       ├── 🗺️ {Product} MOC.md
+│       ├── Overview.md
+│       ├── Architecture.md
+│       └── Debriefs/
+└── Topics/               # Cross-cutting theme pages
+```
+
+---
+
+## Frontmatter Schema
+
+Every wiki page MUST have YAML frontmatter:
+
+```yaml
+---
+type: overview | architecture | business | marketing | debrief | moc | topic | reference | log
+app: {ProductName} | vault-wide
+date: YYYY-MM-DD
+status: active | complete | stale | ideation | in-progress
+---
+```
+
+---
+
+## Linking Conventions
+
+- Use Obsidian `[[wiki-links]]` for all internal references
+- Every product mention links to that product's MOC
+- MOCs are navigation hubs prefixed with 🗺️
+- Debriefs link back to the product MOC
+
+---
+
+## Workflows
+
+### Ingest (new source)
+1. Save raw source to `Sources/{type}/`. Never modify after saving.
+2. Update affected wiki pages (Overview, Architecture, etc.).
+3. Update `index.md`.
+4. Append to `log.md`.
+
+### Query
+1. Search wiki via grep or qmd.
+2. Synthesize answer.
+3. If reusable, file as a wiki page.
+4. Update `index.md` + `log.md`.
+
+### Lint
+- Check for contradictions, orphans, stale claims, frontmatter gaps.
+- Fix mechanical issues automatically. Flag judgment calls.
+
+---
+
+## Ground Rules
+
+1. The LLM writes the wiki. You curate sources and direct.
+2. Sources are immutable.
+3. `index.md` and `log.md` are always current.
+4. Cross-link aggressively. Orphan pages are bugs.
+5. Frontmatter is mandatory.
+6. Debriefs are append-only history.
+7. Prefer updating over creating.
