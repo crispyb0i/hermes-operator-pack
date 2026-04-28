@@ -29,7 +29,8 @@ LINEAR_API_KEY=lin_api_…     # optional
 TELEGRAM_BOT_TOKEN=…         # the bot that DMs you
 TELEGRAM_CHAT_ID=…           # your DM chat id
 
-TODOS_FILE=~/Documents/Obsidian/TODOs.md   # optional, default shown
+TODOS_FILE=~/Documents/Obsidian/TODOs.md                   # optional, default shown
+FORECAST_FILE=~/Documents/Obsidian/Topics/Forecasting\ Log.md   # optional, default shown
 ```
 
 ## How it works
@@ -42,7 +43,27 @@ TODOS_FILE=~/Documents/Obsidian/TODOs.md   # optional, default shown
    - Today's items (any checkbox with today's date tag) → shown bold
    - Next 3 days of Upcoming → shown as a peek-ahead
    - Any item with a past date that's still unchecked → flagged **OVERDUE**
-6. Compose a single Telegram message. Send.
+6. **Read your Forecasting Log** (`$FORECAST_FILE`, default `~/Documents/Obsidian/Topics/Forecasting Log.md`):
+   - Any open prediction with `Resolves` matching today → surfaced as **🎯 Resolves Today**
+   - Any open prediction with `Resolves` past and still unresolved → flagged **⚠️ OVERDUE RESOLUTION**
+   - Goal: prevent the Forecasting Log from becoming a write-only graveyard. Resolution discipline is enforced by surfacing.
+7. Compose a single Telegram message. Send.
+
+## Forecasting Log format
+
+The skill parses the open-predictions table in `Topics/Forecasting Log.md`. Expected row format:
+
+```markdown
+| Date | Prediction | Probability | Resolves | Source |
+|------|-----------|-------------|----------|--------|
+| 2026-04-27 | Show HN reaches HN front page (top 30) | 30% | 2026-04-29 EOD | (source) |
+```
+
+Rules the parser enforces:
+- `Resolves` column is parsed for `YYYY-MM-DD` (anything after the date, like "EOD", is ignored)
+- Today's date in `Resolves` → surface in briefing as "🎯 Resolves Today"
+- Past date + still in open-predictions table → "⚠️ OVERDUE RESOLUTION"
+- Predictions in the **Resolved** section are skipped
 
 ## TODOs file format
 
@@ -78,20 +99,23 @@ hermes cron create "0 7 * * *" --name daily-briefing \
 ## Output template
 
 ```
-☕ Daily Briefing — Mon Apr 28
+☕ Daily Briefing — Wed Apr 29
 
 📌 Today's TODOs
   ▸ Post Show HN — 8am ET window
   ▸ Watch thread first hour
-  ▸ Confirm landing page live
+  ▸ Reply to Nous AMA thread with substance
+
+🎯 Resolves Today (2)
+  ▸ Show HN front page top 30 — predicted 30%, score by 11:59pm
+  ▸ Show HN top 5 — predicted 5%, score by 11:59pm
 
 ⚠️ OVERDUE (1)
   ▸ [2026-04-25] Reply to vendor invoice email
 
 🔭 Coming up
-  Tue: Nous AMA prep, services-pivot decision
-  Wed: AMA goes live 8am PT
   Thu: mid-week post-mortem
+  Sat: weekly ship-log
 
 💰 Revenue (24h)
   MRR: $1,247 (+$24 net)
@@ -102,7 +126,6 @@ hermes cron create "0 7 * * *" --name daily-briefing \
 🔧 GitHub
   PRs awaiting review: #142, #144
   Merged: #138, #139, #141
-  Yours stalled >3d: #131 ("Add CSV export")
 
 📋 Linear
   In progress: 3
@@ -120,3 +143,5 @@ hermes cron create "0 7 * * *" --name daily-briefing \
 - **GitHub rate limits.** Use a fine-grained PAT scoped to your repos to avoid bumping into the 60/h unauthenticated limit.
 - **Don't run this from gateway** — long-running aggregations can exceed gateway timeouts. Use a cron job.
 - **TODOs file parsing.** Date tags must be `[YYYY-MM-DD]` exactly — the parser is regex-based. Other date formats are ignored. If "today" looks empty in the briefing but you swear you have items due today, check the date tag format.
+- **Forecasting Log resolution discipline.** This section's whole purpose is to **force** you to score predictions on their resolution date. If you see "🎯 Resolves Today" in the briefing and skip scoring, the log dies within 60 days (universal failure mode of forecasting practice). The auto-surface is load-bearing.
+- **Forecasting Log path.** Default is `~/Documents/Obsidian/Topics/Forecasting Log.md` (note the space). Override via `$FORECAST_FILE` if your vault structure differs.
